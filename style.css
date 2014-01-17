@@ -1,0 +1,78 @@
+/* CSS Document */
+  
+body {
+	background-color: #C6FACE;
+	background-image: url('background2.jpg');
+	padding-top: 10px;
+}
+#container {
+	width: 50%;
+	padding: 0px 0px 20px 0px;
+	margin: 0 auto;
+	border-radius: 15px;
+	background-color: #FFFFFF;
+}
+a:link {
+	color: #11C40B;
+	text-decoration: none;
+}
+a:visited {
+	color: #11C40B;
+	text-decoration: none;
+}
+a:hover {
+	color: #63E276;
+	text-decoration: none;
+}
+a:active {
+	color: #000000;
+	text-decoration: none;
+}
+h1 {
+	font-family: 'Averia Sans Libre', cursive;
+	font-weight: 900;
+	font-size: 250%;
+}
+#header {
+	padding: 1px 0px 0px 0px;
+	overflow: auto;
+	border-radius: 15px 15px 0px 0px;
+	background-color: #FFFFFF;
+	background-image: url('header4.png');
+	background-position: right;
+	background-repeat: no-repeat;
+	min-height: 125px;
+	position: relative;
+}
+#title {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+}
+#headerimg {
+	float: right;
+	display: block;
+}
+.content {
+	min-height: 0px;
+	padding: 0px 20px 0px 20px;
+}
+#nav {
+	background-color: #EEEEEE;
+	padding: 5px 0px 5px 0px;
+	border-top: 1px solid #CCCCCC;
+	border-bottom: 1px solid #CCCCCC;
+}
+#menu {
+	width: 100%;
+	display: table;
+}
+.navitem {
+	display: inline-block;
+	text-align: center;
+	font-weight: bold;
+	width: 100%;
+}
+.cell {
+	display: table-cell;
+}
