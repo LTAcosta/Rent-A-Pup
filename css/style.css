@@ -2,7 +2,7 @@
   
 body {
 	background-color: #C6FACE;
-	background-image: url('background2.jpg');
+	background-image: url('../img/background2.jpg');
 	padding-top: 10px;
 }
 #container {
@@ -38,7 +38,7 @@ h1 {
 	overflow: auto;
 	border-radius: 15px 15px 0px 0px;
 	background-color: #FFFFFF;
-	background-image: url('header4.png');
+	background-image: url('../img/header4.png');
 	background-position: right;
 	background-repeat: no-repeat;
 	min-height: 125px;
