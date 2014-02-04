@@ -17,9 +17,6 @@ The idea started when our CEO brought his little puppy Benjamin over to his frie
 	</div>
 </div>
 
-<script src="http://code.jquery.com/jquery-latest.min.js"></script>
-<script src="js/jquery.slides.min.js"></script>
-
 <script>
 
 function slideSwitch() {
@@ -59,7 +56,8 @@ function updateHeight() {
     if ( $active.length == 0 ) $active = $('#slideshow IMG:last');
 	
 	// Resize the slideshow div to match the image height
-	$('#slideshow').css("height", $active.css("height"))
+	if ($active.css("height") > 0)
+		$('#slideshow').css("height", $active.css("height"));
 }
 
 $(document).ready(function () {

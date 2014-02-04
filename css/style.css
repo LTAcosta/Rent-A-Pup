@@ -33,6 +33,10 @@ h1 {
 	font-weight: 900;
 	font-size: 250%;
 }
+h3 {
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
 #header {
 	padding: 1px 0px 0px 0px;
 	overflow: auto;
@@ -103,4 +107,28 @@ h1 {
 
 #slideshow IMG.last-active {
     z-index:9;
+}
+.ui-slider .ui-slider-handle {
+	z-index: 1;
+}
+.contactGroup {
+	border-radius: 10px;
+	border: 1px solid #CCCCCC;
+	padding: 10px;
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+#selectedPup {
+	float: right;
+}
+#selectedPup IMG {
+	width: 100px;
+	height: 100px;
+	display: none;
+}
+#selectedPup IMG.selected {
+	display: block;
+}
+#resInfo {
+	margin-right: 105px;
 }
