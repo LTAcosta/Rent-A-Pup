@@ -2,16 +2,26 @@
 
 <h2>Rent!</h2>
 
+<div id="rentalContent">
 Renting a puppy is easy! Simply fill out the information below, and we will contact you to confirm availability. All of our pups are billed at an hourly rate of $5/hr.<br />
 
-<form>
+<form id="contactForm" action="processRental.php" method="post">
 	<div class="contactGroup">
     	<h3>Customer Information</h3>
-		Name: <input type="text" name="Name" />
-    	<br />
-    	Email: <input type="text" name="Email" />
-    	<br />
-    	Phone: <input type="text" name="Phone" />
+        <table>
+        	<tr>
+				<td  class="label"><label for="name">Name: </label></td>
+                <td><input id="name" name="name"/></td>
+            </tr>
+            <tr>
+            	<td class="label"><label for="email">Email: </label></td>
+                <td><input id="email" name="email"/></td>
+            </tr>
+            <tr>
+            	<td class="label"><label for="phone">Phone: </label></td>
+                <td><input id="phone" name="phone"/></td>
+            </tr>
+        </table>
     </div>
     <div class="contactGroup">
     	<div id="selectedPup">
@@ -22,28 +32,53 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
     	</div>
     	<div id="resInfo">
     		<h3>Reservation Information</h3>
-    		Puppy: 
-			<select onChange="pupChanged(this)" id="pupSelect">
-				<option value="Charles">Charles</option>
-    			<option value="Chunk">Chunk</option>
-    			<option value="Goose">Goose</option>
-    			<option value="Sheila">Sheila</option>
-			</select>
-    		<br />
-    		Date: <input type="text" id="datepicker">
-    		<br />
-    		<div id="time-range">
-    			Time: <span id="startTime">10:00 AM</span> - <span id="stopTime">4:00 PM</span> (<span id="duration">6</span> hours)
-    			<div id="slider-range"></div>
-			</div>
+            <table>
+            	<tr>
+    				<td class="label"><label for="pupSelect">Puppy: </label></td>
+					<td>
+                    <select onChange="pupChanged(this)" id="pupSelect" name="pupSelect">
+						<option value="Charles">Charles</option>
+    					<option value="Chunk">Chunk</option>
+    					<option value="Goose">Goose</option>
+    					<option value="Sheila">Sheila</option>
+					</select>
+                    </td>
+                </tr>
+                <tr>
+    				<td class="label"><label for="datepicker">Date: </label></td>
+                    <td><input id="datepicker" name="datepicker"></td>
+                </tr>
+                <tr>
+                	<td class="label">Time: </td>
+                    <td>
+                    	<span id="startTime">10:00 AM</span> - <span id="stopTime">4:00 PM</span> (<span id="duration">6</span> hours)
+                        <input type="hidden" id="startTimeValue" name="startTimeValue" value="10:00 AM">
+                        <input type="hidden" id="stopTimeValue" name="stopTimeValue" value="4:00 PM">
+                        <input type="hidden" id="durationValue" name="durationValue" value="6">
+                    </td>
+                </tr>
+                <tr>
+                	<td></td>
+                    <td><div id="slider-range"></div></td>
+                </tr>
+            </table>
     	</div>
     </div>
     <br />
     <center>
     	Price: <b><span id="price">$30.00</span></b>
-    	<input type="submit" value="Submit">
+        <input type="hidden" id="priceValue" name="priceValue" value="30.00">
+    	<input type="submit" id="submit" value="Submit">
     </center>
 </form>
+</div>
+
+<div id="response"></div>
+
+<script src="js/jquery.form.js"></script>
+<script src="js/jquery.validate.min.js"></script>
+<script src="js/additional-methods.min.js"></script>
+<script src="js/contact.js"></script>
 
 <script>
   $(function() {
@@ -82,8 +117,6 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
             minutes1 = minutes1;
         }
 
-        $('#startTime').html(hours1 + ':' + minutes1);
-
         var hours2 = Math.floor(ui.values[1] / 60);
         var minutes2 = ui.values[1] - (hours2 * 60);
 
@@ -106,13 +139,22 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
             minutes2 = minutes2 + " AM";
         }
 
-        $('#stopTime').html(hours2 + ':' + minutes2);
-		
+		var startTime = hours1 + ':' + minutes1;
+		var stopTime = hours2 + ':' + minutes2;
 		var duration = (ui.values[1] / 60) - (ui.values[0] / 60);
-		$('#duration').html(duration);
+		var price = (duration * 5).toFixed(2);
+
+		$('#startTime').html(startTime);
+		document.getElementById("startTimeValue").value = startTime;
 		
-		var price = duration * 5;
-		$('#price').html('$' + price.toFixed(2));
+        $('#stopTime').html(stopTime);
+		document.getElementById("stopTimeValue").value = stopTime;
+		
+		$('#duration').html(duration);
+		document.getElementById("durationValue").value = duration;
+		
+		$('#price').html('$' + price);
+		document.getElementById("priceValue").value = price;
     }
 });
 
