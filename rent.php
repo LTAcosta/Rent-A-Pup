@@ -67,7 +67,6 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
     <br />
     <center>
     	Price: <b><span id="price">$30.00</span></b>
-        <input type="hidden" id="priceValue" name="priceValue" value="30.00">
     	<input type="submit" id="submit" value="Submit">
     </center>
 </form>
@@ -94,53 +93,8 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
     step: 15,
     values: [600, 960],
     slide: function (e, ui) {
-        var hours1 = Math.floor(ui.values[0] / 60);
-        var minutes1 = ui.values[0] - (hours1 * 60);
-
-        if (hours1.length == 1) hours1 = '0' + hours1;
-        if (minutes1.length == 1) minutes1 = '0' + minutes1;
-        if (minutes1 == 0) minutes1 = '00';
-        if (hours1 >= 12) {
-            if (hours1 == 12) {
-                hours1 = hours1;
-                minutes1 = minutes1 + " PM";
-            } else {
-                hours1 = hours1 - 12;
-                minutes1 = minutes1 + " PM";
-            }
-        } else {
-            hours1 = hours1;
-            minutes1 = minutes1 + " AM";
-        }
-        if (hours1 == 0) {
-            hours1 = 12;
-            minutes1 = minutes1;
-        }
-
-        var hours2 = Math.floor(ui.values[1] / 60);
-        var minutes2 = ui.values[1] - (hours2 * 60);
-
-        if (hours2.length == 1) hours2 = '0' + hours2;
-        if (minutes2.length == 1) minutes2 = '0' + minutes2;
-        if (minutes2 == 0) minutes2 = '00';
-        if (hours2 >= 12) {
-            if (hours2 == 12) {
-                hours2 = hours2;
-                minutes2 = minutes2 + " PM";
-            } else if (hours2 == 24) {
-                hours2 = 11;
-                minutes2 = "59 PM";
-            } else {
-                hours2 = hours2 - 12;
-                minutes2 = minutes2 + " PM";
-            }
-        } else {
-            hours2 = hours2;
-            minutes2 = minutes2 + " AM";
-        }
-
-		var startTime = hours1 + ':' + minutes1;
-		var stopTime = hours2 + ':' + minutes2;
+		var startTime = minutesToClock(ui.values[0]);
+		var stopTime = minutesToClock(ui.values[1]);
 		var duration = (ui.values[1] / 60) - (ui.values[0] / 60);
 		var price = (duration * 5).toFixed(2);
 
@@ -154,9 +108,28 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
 		document.getElementById("durationValue").value = duration;
 		
 		$('#price').html('$' + price);
-		document.getElementById("priceValue").value = price;
     }
 });
+
+	function minutesToClock(time){
+		if(time == 1440) time = 1439;
+		
+		var hours = Math.floor(time / 60);
+        var minutes = time - (hours * 60);
+
+        if (hours.length == 1) hours = '0' + hours;
+        if (minutes.length == 1) minutes = '0' + minutes;
+        if (minutes == 0) minutes = '00';
+        if (hours >= 12) {
+            if (hours > 12) hours = hours - 12;
+			minutes = minutes + " PM";
+        } else {
+            minutes = minutes + " AM";
+        }
+        if (hours == 0) hours = 12;
+		
+		return hours + ':' + minutes;
+	}
 
 	function pupChanged(pupSelect){
 		var $next = $('#' + pupSelect.value);
