@@ -1,4 +1,9 @@
 $(function() {
+	// Add custom time validation
+	jQuery.validator.addMethod("blackouts", function(value, element) {
+		return this.optional(element) || validateTime();
+	}, "");
+	
   // Validate the contact form
   $('#contactForm').validate({
     // Specify what the errors should look like
@@ -15,7 +20,8 @@ $(function() {
     rules: {
       name: {
         required: true,
-        minlength: 2
+        minlength: 2,
+		blackouts: true
       },
       email: {
         required: true,

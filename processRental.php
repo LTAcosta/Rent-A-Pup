@@ -15,7 +15,6 @@ $puppy = $_POST["pupSelect"];
 $date = $_POST["datepicker"];
 $startTime = $_POST["startTimeValue"];
 $stopTime = $_POST["stopTimeValue"];
-$duration = $_POST["durationValue"];
  
 // Test input values for errors
 $errors = array();
@@ -46,15 +45,13 @@ if(!$date) {
 } else if(!validDate($date)) {
     $errors[] = "You must select a valid date.";
 }
-if(!validTime($startTime)) {
-    $errors[] = "You must select a valid start time.";
+if(!validTime($startTime, $stopTime)) {
+    $errors[] = "You must select a valid start and end time.";
 }
-if(!validTime($stopTime)) {
-    $errors[] = "You must select a valid end time.";
+if(!validReservation($startTime, $stopTime, $puppy, $date)){
+	$errors[] = "You must select an available rental time.";
 }
-if(!validDuration($duration)) {
-    $errors[] = "You must select a valid rental time.";
-}
+$duration = ($stopTime / 60.0) - ($startTime / 60.0);
 $price = calcPrice($duration);
  
 if($errors) {
@@ -65,12 +62,15 @@ if($errors) {
   }
   die("<span class='failure'>The following errors occured:<ul>". $errortext ."</ul></span>");
 }
+
+$client = saveUser($name, $email, $phone);
+$reservation = saveReservation($client, $puppy, $date, $startTime, $stopTime, $price);
  
-sendReservation($name, $email, $phone, $puppy, $date, $startTime, $stopTime, $duration, $price);
-sendConfirmation($name, $email, $phone, $puppy, $date, $startTime, $stopTime, $duration, $price);
+sendReservation($client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price);
+sendConfirmation($client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price);
  
 // Die with a success message
-$table = formatReservation($name, $email, $phone, $puppy, $date, $startTime, $stopTime, $duration, $price);
+$table = formatReservation($client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price);
 die("<span class='success'>Success! Your rental has been sent. We will contact you shortly to confirm.</span>" . $table);
  
 // A function that checks to see if
@@ -155,30 +155,97 @@ function validPuppy($puppy)
 
 function validDate($date)
 {
-	if (preg_match("/^(\d{2})\/(\d{2})\/(\d{4})$/", $date, $matches)) {
-        return checkdate($matches[1], $matches[2], $matches[3]);
+	if (preg_match("/^(\d{4})-(\d{2})-(\d{2})$/", $date, $matches)) {
+        return checkdate($matches[2], $matches[3], $matches[1]);
     }
 
     return false;
 }
 
-function validTime($time)
+function validTime($startTime, $endTime)
 {
-	$length = strlen($time);
-	$digits = strlen(preg_replace("/[^0-9]/","",$time));
-	return $length >= 7 && $length <= 8 && $digits >= 3 && $digits <= 4;
+	return $startTime >= 0 && $startTime <= 1440 && $endTime >= 0 && $$endTime <= 1440 && $startTime < $endTime;
 }
 
-function validDuration($duration)
+function getPuppyID($puppy)
 {
-	$value = floatval(ereg_replace("[^-0-9\.]","",$duration));
-	return $value > 0;
+	switch($puppy){
+		case "Charles":
+			$puppy = '1';
+			break;
+		case "Chunk":
+			$puppy = '2';
+			break;
+		case "Goose":
+			$puppy = '3';
+			break;
+		case "Sheila":
+			$puppy = '4';
+			break;
+	}
+	
+	return $puppy;
+}
+
+function minutesToClock($time)
+{
+		$time = $time + 0;
+		
+		if($time == 1440)
+			$time = 1439;
+		
+		$hours = floor($time / 60);
+        $minutes = $time - ($hours * 60);
+
+        if ($minutes < 10) $minutes = '0' . $minutes;
+        if ($minutes == 0) $minutes = '00';
+        if ($hours >= 12) {
+            if ($hours > 12) $hours = $hours - 12;
+			$minutes = $minutes . " PM";
+        } else {
+            $minutes = $minutes . " AM";
+        }
+        if ($hours == 0) $hours = 12;
+		
+		return $hours . ':' . $minutes;
+}
+
+function validReservation($startTime, $stopTime, $puppy, $date)
+{
+	$puppy = getPuppyID($puppy);
+
+	// Connect to MySQL.
+	require ('../../rentapup_sql_connect.php');
+
+	if(!$dbc)
+	{
+		return false;
+	}
+
+	$q = "SELECT * FROM reservations WHERE date = '".$date."' AND puppy_id = '".$puppy."'";
+	$r = @mysqli_query ($dbc, $q); // Run the query.
+
+	if($r)
+	{
+		while ($row = mysqli_fetch_array($r))
+		{
+			$blackoutStart = $row['start_time'] + 0;
+			$blackoutEnd = $row['end_time'] + 0;
+			
+			if(($blackoutStart >= $startTime && $blackoutStart <= $stopTime) || 
+			   ($blackoutEnd >= $startTime && $blackoutEnd <= $stopTime))
+			   {
+				   return false;
+			   }
+		}
+	}
+	
+	return true;
 }
 
 function calcPrice($duration)
 {
-	$durationVal = floatval(ereg_replace("[^-0-9\.]","",$duration));
-	$price = number_format($durationVal * 5.0, 2, '.', '');	
+	$price = number_format($duration * 5.0, 2, '.', '');	
 	return $price;
 }
 
@@ -190,27 +257,27 @@ function sendEmail($to, $subject, $message)
 	mail($to, $subject, $message, $headers);
 }
 
-function sendReservation($name, $email, $phone, $puppy, $date, $startTime, $stopTime, $duration, $price)
+function sendReservation($client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price)
 {
 	$to = "Rent-A-Pup@ltacosta.com";
 	$title = "New Reservation";
 	$desc = "A new reservation has been received! Reservation information is below.";
 	
-	sendNewRental($to, $title, $desc, $name, $email, $phone, $puppy, $date, $startTime, $stopTime, $duration, $price);
+	sendNewRental($to, $title, $desc, $client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price);
 }
 
-function sendConfirmation($name, $email, $phone, $puppy, $date, $startTime, $stopTime, $duration, $price)
+function sendConfirmation($client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price)
 {
 	$title = "Reservation Confirmation";
 	$desc = "We've received your reservation! We will contact you soon to arrange pick up. Please review the information below and contact us to make any changes.";
 	
-	sendNewRental($email, $title, $desc, $name, $email, $phone, $puppy, $date, $startTime, $stopTime, $duration, $price);
+	sendNewRental($email, $title, $desc, $client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price);
 }
 
-function sendNewRental($to, $title, $desc, $name, $email, $phone, $puppy, $date, $startTime, $stopTime, $duration, $price)
+function sendNewRental($to, $title, $desc, $client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price)
 {
 	$subject = "Rent-A-Pup: " . $title;
-	$table = formatReservation($name, $email, $phone, $puppy, $date, $startTime, $stopTime, $duration, $price);
+	$table = formatReservation($client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price);
 	
 	$message = file_get_contents("email.html");
 	$message = str_replace("!!!TITLE!!!", $title, $message);
@@ -219,19 +286,106 @@ function sendNewRental($to, $title, $desc, $name, $email, $phone, $puppy, $date,
 	sendEmail($to, $subject, $message);
 }
 
-function formatReservation($name, $email, $phone, $puppy, $date, $startTime, $stopTime, $duration, $price)
+function formatReservation($client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price)
 {
+	$startTime = minutesToClock($startTime);
+	$stopTime = minutesToClock($stopTime);
+	
 	$time = $startTime . " - " . $stopTime . " (" . $duration . " hours)";
 	
 	$table = file_get_contents("reservationFormat.html");
+	$table = str_replace("!!!CLIENT!!!", $client, $table);
 	$table = str_replace("!!!NAME!!!", $name, $table);
 	$table = str_replace("!!!EMAIL!!!", $email, $table);
 	$table = str_replace("!!!PHONE!!!", $phone, $table);
+	$table = str_replace("!!!RESERVATION!!!", $reservation, $table);
 	$table = str_replace("!!!PUPPY!!!", $puppy, $table);
 	$table = str_replace("!!!DATE!!!", $date, $table);
 	$table = str_replace("!!!TIME!!!", $time, $table);
 	$table = str_replace("!!!PRICE!!!", '$' . $price, $table);
 	
 	return $table;
+}
+
+function saveUser($name, $email, $phone)
+{
+	// Connect to MySQL.
+	require ('../../rentapup_sql_connect.php');
+
+	if(!$dbc)
+	{
+		return false;
+	}
+
+	$q = "SELECT * FROM clients WHERE email = '".$email."'";
+	$r = @mysqli_query ($dbc, $q); // Run the query.
+	$client;
+
+	if($r)
+	{
+		while ($row = mysqli_fetch_array($r))
+		{
+			$client = $row['client_id'];
+			break;
+		}
+	}
+	
+	if($client)
+	{
+		$u = "UPDATE clients SET name='".$name."', phone='".$phone."' WHERE email='".$email."'";
+		@mysqli_query ($dbc, $u); // Run the query
+		return $client;
+	}
+	
+	$i = "INSERT INTO clients(name, email, phone) VALUES('".$name."','".$email."','".$phone."')";
+	@mysqli_query ($dbc, $i); // Run the query
+	
+	$r = @mysqli_query ($dbc, $q); // Run the query.
+
+	if($r)
+	{
+		while ($row = mysqli_fetch_array($r))
+		{
+			$client = $row['client_id'];
+			break;
+		}
+	}
+	
+	return $client;
+}
+
+function saveReservation($client, $puppy, $date, $startTime, $stopTime, $price)
+{
+	$puppy = getPuppyID($puppy);
+	
+	// Connect to MySQL.
+	require ('../../rentapup_sql_connect.php');
+
+	if(!$dbc)
+	{
+		return false;
+	}
+	
+	$i = "INSERT INTO reservations(client_id, puppy_id, date, start_time, end_time, price, placed_date) "
+	     ."VALUES('".$client."','".$puppy."','".$date."','".$startTime."','".$stopTime."','".$price."',NOW())";
+	@mysqli_query ($dbc, $i); // Run the query
+
+	$q = "SELECT * FROM reservations WHERE client_id = '".$client."' "
+	                                 ."AND puppy_id = '".$puppy."' "
+									 ."AND date = '".$date."' "
+									 ."AND start_time = '".$startTime."'";
+	$r = @mysqli_query ($dbc, $q); // Run the query.
+	$reservation;
+
+	if($r)
+	{
+		while ($row = mysqli_fetch_array($r))
+		{
+			$reservation = $row['reservation_id'];
+			break;
+		}
+	}
+	
+	return $reservation;
 }
 ?>

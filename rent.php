@@ -10,16 +10,16 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
     	<h3>Customer Information</h3>
         <table>
         	<tr>
-				<td  class="label"><label for="name">Name: </label></td>
-                <td><input id="name" name="name"/></td>
+				<td class="label"><label for="name">Name: </label></td>
+                <td class="inputs"><input id="name" name="name"/></td>
             </tr>
             <tr>
             	<td class="label"><label for="email">Email: </label></td>
-                <td><input id="email" name="email"/></td>
+                <td class="inputs"><input id="email" name="email"/></td>
             </tr>
             <tr>
             	<td class="label"><label for="phone">Phone: </label></td>
-                <td><input id="phone" name="phone"/></td>
+                <td class="inputs"><input id="phone" name="phone"/></td>
             </tr>
         </table>
     </div>
@@ -35,7 +35,7 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
             <table>
             	<tr>
     				<td class="label"><label for="pupSelect">Puppy: </label></td>
-					<td>
+					<td class="inputs">
                     <select onChange="pupChanged(this)" id="pupSelect" name="pupSelect">
 						<option value="Charles">Charles</option>
     					<option value="Chunk">Chunk</option>
@@ -46,20 +46,23 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
                 </tr>
                 <tr>
     				<td class="label"><label for="datepicker">Date: </label></td>
-                    <td><input id="datepicker" name="datepicker"></td>
+                    <td class="inputs"><input id="datepicker" name="datepicker" onchange="refreshBlackouts()"></td>
                 </tr>
                 <tr>
                 	<td class="label">Time: </td>
-                    <td>
+                    <td class="inputs">
                     	<span id="startTime">10:00 AM</span> - <span id="stopTime">4:00 PM</span> (<span id="duration">6</span> hours)
-                        <input type="hidden" id="startTimeValue" name="startTimeValue" value="10:00 AM">
-                        <input type="hidden" id="stopTimeValue" name="stopTimeValue" value="4:00 PM">
-                        <input type="hidden" id="durationValue" name="durationValue" value="6">
+                        <input type="hidden" id="startTimeValue" name="startTimeValue" value="600">
+                        <input type="hidden" id="stopTimeValue" name="stopTimeValue" value="960">
                     </td>
                 </tr>
                 <tr>
                 	<td></td>
-                    <td><div id="slider-range"></div></td>
+                    <td class="inputs"><div id="slider-range"></div></td>
+                </tr>
+                <tr>
+                	<td></td>
+                    <td class="inputs"><span id="rangeError"></span></td>
                 </tr>
             </table>
     	</div>
@@ -80,9 +83,108 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
 <script src="js/contact.js"></script>
 
 <script>
+	$(function() {
+		$(document).tooltip({
+      position: {
+        my: "center bottom-20",
+        at: "center top",
+        using: function( position, feedback ) {
+          $( this ).css( position );
+          $( "<div>" )
+            .addClass( "arrow" )
+            .addClass( feedback.vertical )
+            .addClass( feedback.horizontal )
+            .appendTo( this );
+        }
+      }
+    });
+	});
+	
+	var blackouts = [];
+
+	function removeBlackouts(){
+		console.log("Clearing Blackouts");
+		$(".blackout").remove();
+		blackouts.length = 0;
+		$('#rangeError').html('');
+	}
+	
+	function addBlackout(startTime, endTime){
+		if(!startTime || !endTime || startTime > endTime)
+			return;
+		
+		blackouts.push([startTime, endTime]);
+			
+		var startPercent = startTime / 1440 * 100;
+		var widthPercent = (endTime - startTime) / 1440 * 100;
+		
+		$("#slider-range").children(".ui-slider-range")
+		                  .last()
+						  .after("<div class=\"ui-slider-range ui-widget-header ui-corner-all blackout\" style=\"left: "
+						          + startPercent 
+								  + "%; width: "
+								  + widthPercent
+								  + "%;\" title=\"Unavailable: "
+								  + minutesToClock(startTime)
+								  + " - "
+								  + minutesToClock(endTime)
+								  + "\"></div>");
+	}
+	
+	function refreshBlackouts(){
+		removeBlackouts();
+		
+		date = $("#datepicker").val();
+		if(!date)
+			return;
+			
+		puppy = $("#pupSelect").val();
+		
+		if(!puppy)
+			return;
+		
+		$.post('queryReservations.php', "date="+date+"&puppy="+puppy, function(response) {
+			// log the response to the console
+			console.log("Response: "+response);
+			if(response.indexOf("NO") == -1){
+				var times = response.split(",");
+				for(var i = 0; i < times.length; i++){
+					if(times[i] == "" || times[i].indexOf("-") == -1)
+						continue;
+					
+					var time = times[i].split("-");
+					if(time.length < 2 || time[0] == "" || time[1] == "")
+						continue;
+						
+					addBlackout(parseInt(time[0]), parseInt(time[1]));
+				}
+			}
+			validateTime();
+		});
+	}
+	
+	function validateTime(values){
+		if(!values)
+			values = $("#slider-range").slider("values");
+		
+		$('#rangeError').html('');
+		for (var i = 0; i < blackouts.length; i++){
+			if (blackouts[i] && blackouts[i].length >= 2 && 
+			    ((blackouts[i][0] >= values[0] && blackouts[i][0] <= values[1]) || 
+				 (blackouts[i][1] >= values[0] && blackouts[i][1] <= values[1]))){
+				$('#rangeError').html('Please select an available time slot.');
+				return false;
+			}
+		}
+		
+		return true;
+	}
+
   $(function() {
     $( "#datepicker" ).datepicker({
-		minDate: 0
+		minDate: 0,
+		dateFormat: "yy-mm-dd",
+		onSelect: function (dateText, inst) {refreshBlackouts();}
 		});
   });
   
@@ -99,15 +201,16 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
 		var price = (duration * 5).toFixed(2);
 
 		$('#startTime').html(startTime);
-		document.getElementById("startTimeValue").value = startTime;
+		document.getElementById("startTimeValue").value = ui.values[0];
 		
         $('#stopTime').html(stopTime);
-		document.getElementById("stopTimeValue").value = stopTime;
+		document.getElementById("stopTimeValue").value = ui.values[1];
 		
 		$('#duration').html(duration);
-		document.getElementById("durationValue").value = duration;
 		
 		$('#price').html('$' + price);
+		
+		validateTime(ui.values);
     }
 });
 
@@ -141,6 +244,8 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
 				
 			$next.addClass('selected');			
 		}
+		
+		refreshBlackouts();
 	}
 </script>
     
