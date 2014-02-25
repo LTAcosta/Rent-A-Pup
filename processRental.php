@@ -65,12 +65,14 @@ if($errors) {
 
 $client = saveUser($name, $email, $phone);
 $reservation = saveReservation($client, $puppy, $date, $startTime, $stopTime, $price);
+
+$puppyName = getPuppyName($puppy);
  
-sendReservation($client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price);
-sendConfirmation($client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price);
+sendReservation($client, $name, $email, $phone, $reservation, $puppyName, $date, $startTime, $stopTime, $duration, $price);
+sendConfirmation($client, $name, $email, $phone, $reservation, $puppyName, $date, $startTime, $stopTime, $duration, $price);
  
 // Die with a success message
-$table = formatReservation($client, $name, $email, $phone, $reservation, $puppy, $date, $startTime, $stopTime, $duration, $price);
+$table = formatReservation($client, $name, $email, $phone, $reservation, $puppyName, $date, $startTime, $stopTime, $duration, $price);
 die("<span class='success'>Success! Your rental has been sent. We will contact you shortly to confirm.</span>" . $table);
  
 // A function that checks to see if
@@ -147,10 +149,7 @@ function validPhone($phone)
 
 function validPuppy($puppy)
 {
-	return $puppy == "Charles" ||
-	       $puppy == "Chunk" ||
-		   $puppy == "Goose" ||
-		   $puppy == "Sheila";
+	return $puppy > 0;
 }
 
 function validDate($date)
@@ -165,26 +164,6 @@ function validDate($date)
 function validTime($startTime, $endTime)
 {
 	return $startTime >= 0 && $startTime <= 1440 && $endTime >= 0 && $$endTime <= 1440 && $startTime < $endTime;
-}
-
-function getPuppyID($puppy)
-{
-	switch($puppy){
-		case "Charles":
-			$puppy = '1';
-			break;
-		case "Chunk":
-			$puppy = '2';
-			break;
-		case "Goose":
-			$puppy = '3';
-			break;
-		case "Sheila":
-			$puppy = '4';
-			break;
-	}
-	
-	return $puppy;
 }
 
 function minutesToClock($time)
@@ -212,8 +191,6 @@ function minutesToClock($time)
 
 function validReservation($startTime, $stopTime, $puppy, $date)
 {
-	$puppy = getPuppyID($puppy);
-
 	// Connect to MySQL.
 	require ('../../rentapup_sql_connect.php');
 
@@ -241,6 +218,35 @@ function validReservation($startTime, $stopTime, $puppy, $date)
 	}
 	
 	return true;
+}
+
+function getPuppyName($puppy)
+{
+	// Connect to MySQL.
+	require ('../../rentapup_sql_connect.php');
+
+	if(!$dbc)
+	{
+		return "Puppy #".$puppy;
+	}
+
+	$q = "SELECT * FROM puppies WHERE puppy_id = '".$puppy."'";
+	$r = @mysqli_query ($dbc, $q); // Run the query.
+
+	if($r)
+	{
+		while ($row = mysqli_fetch_array($r))
+		{
+			$puppyName = $row['name'];
+			
+			if($puppyName)
+			{
+				return $puppyName;
+			}
+		}
+	}
+	
+	return "Puppy #".$puppy;
 }
 
 function calcPrice($duration)
@@ -356,8 +362,6 @@ function saveUser($name, $email, $phone)
 
 function saveReservation($client, $puppy, $date, $startTime, $stopTime, $price)
 {
-	$puppy = getPuppyID($puppy);
-	
 	// Connect to MySQL.
 	require ('../../rentapup_sql_connect.php');
 

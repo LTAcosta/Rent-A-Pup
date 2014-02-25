@@ -24,11 +24,45 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
         </table>
     </div>
     <div class="contactGroup">
+    	<?php
+			// Connect to MySQL.
+			require ('../../rentapup_sql_connect.php');
+
+			if(!$dbc)
+			{
+				die('Oh no! We can\'t find the puppies!');
+			}
+
+			$q = "SELECT * FROM puppies";
+			$r = @mysqli_query ($dbc, $q); // Run the query.
+			$puppies = array();
+	
+			if($r)
+			{
+				while ($row = mysqli_fetch_array($r))
+				{
+					$puppies[$row['puppy_id']] = $row['name'];
+				}
+			}
+		?>
+    
     	<div id="selectedPup">
-    		<img src="img/pup1.png" id="Charles" alt="Charles" class="selected">
-    		<img src="img/pup2.png" id="Chunk" alt="Chunk">
-    		<img src="img/pup3.png" id="Goose" alt="Goose">
-    		<img src="img/pup4.png" id="Sheila" alt="Sheila">
+        	<?php
+				$first = True;
+				
+				foreach ($puppies as $id => $name)
+				{
+					if($first)
+					{
+						echo "<img src=\"img/pup".$id.".png\" id=\"pup".$id."\" alt=\"".$name."\" class=\"selected\">";
+						$first = False;
+					}
+					else
+					{
+						echo "<img src=\"img/pup".$id.".png\" id=\"pup".$id."\" alt=\"".$name."\">";
+					}
+				}
+			?>
     	</div>
     	<div id="resInfo">
     		<h3>Reservation Information</h3>
@@ -37,10 +71,12 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
     				<td class="label"><label for="pupSelect">Puppy: </label></td>
 					<td class="inputs">
                     <select onChange="pupChanged(this)" id="pupSelect" name="pupSelect">
-						<option value="Charles">Charles</option>
-    					<option value="Chunk">Chunk</option>
-    					<option value="Goose">Goose</option>
-    					<option value="Sheila">Sheila</option>
+                    	<?php
+							foreach ($puppies as $id => $name)
+							{
+								echo "<option value=\"".$id."\">".$name."</option>";
+							}
+						?>
 					</select>
                     </td>
                 </tr>
@@ -235,7 +271,7 @@ Renting a puppy is easy! Simply fill out the information below, and we will cont
 	}
 
 	function pupChanged(pupSelect){
-		var $next = $('#' + pupSelect.value);
+		var $next = $('#pup' + pupSelect.value);
 		
 		if ( $next.length != 0 ) {
 			var $active = $('#selectedPup IMG.selected');

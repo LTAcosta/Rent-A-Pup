@@ -21,21 +21,6 @@ if(!$puppy)
 	die('NO PUPPY!');
 }
 
-switch($puppy){
-	case "Charles":
-		$puppy = '1';
-		break;
-	case "Chunk":
-		$puppy = '2';
-		break;
-	case "Goose":
-		$puppy = '3';
-		break;
-	case "Sheila":
-		$puppy = '4';
-		break;
-}
-
 // Connect to MySQL.
 require ('../../rentapup_sql_connect.php');
 
@@ -44,7 +29,6 @@ if(!$dbc)
 	die('NO CONNECTION!');
 }
 
-//$q = "SELECT * FROM reservations WHERE date = '2014-02-21'";
 $q = "SELECT * FROM reservations WHERE date = '".$date."' AND puppy_id = '".$puppy."'";
 $r = @mysqli_query ($dbc, $q); // Run the query.
 
